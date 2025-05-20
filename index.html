@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cat Gallery</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    h1 { text-align: center; }
+    #controls { text-align: center; margin-bottom: 20px; }
+    #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+    .cat-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .cat-card img { width: 100%; height: 180px; object-fit: cover; }
+    .loading, .error { text-align: center; margin: 15px; }
+  </style>
+</head>
+<body>
+
+<h1> Cat Gallery</h1>
+
+<div id="controls">
+  <select id="breedSelect"><option value="">All Breeds</option></select>
+  <button onclick="loadCats()">Load More</button>
+</div>
+
+<div id="loading" class="loading" style="display:none;">Loading...</div>
+<div id="error" class="error" style="display:none;">Failed to load cats</div>
+
+<div id="gallery"></div>
+
+<script>
+  const breedSelect = document.getElementById('breedSelect');
+  const gallery = document.getElementById('gallery');
+  const loading = document.getElementById('loading');
+  const error = document.getElementById('error');
+
+  async function fetchBreeds() {
+    try {
+      const res = await fetch('api/breeds.php');
+      const breeds = await res.json();
+      breeds.forEach(breed => {
+        const opt = document.createElement('option');
+        opt.value = breed.id;
+        opt.textContent = breed.name;
+        breedSelect.appendChild(opt);
+      });
+    } catch {
+      console.error("Failed to load breeds");
+    }
+  }
+
+  async function loadCats() {
+    loading.style.display = 'block';
+    error.style.display = 'none';
+
+    const breedId = breedSelect.value;
+    const url = new URL('test/api/cats.php', window.location.origin);
+    url.searchParams.set('limit', 10);
+    if (breedId) url.searchParams.set('breed_id', breedId);
+
+    try {
+      const res = await fetch(url);
+      const cats = await res.json();
+      cats.forEach(cat => {
+        const card = document.createElement('div');
+        card.className = 'cat-card';
+        const img = document.createElement('img');
+        img.src = cat.url;
+        card.appendChild(img);
+        gallery.appendChild(card);
+      });
+    } catch (e) {
+      error.style.display = 'block';
+    } finally {
+      loading.style.display = 'none';
+    }
+  }
+
+  // Initialize
+  fetchBreeds();
+  loadCats();
+
+  // Reload when breed changes
+  breedSelect.addEventListener('change', () => {
+    gallery.innerHTML = '';
+    loadCats();
+  });
+</script>
+
+</body>
+</html>
